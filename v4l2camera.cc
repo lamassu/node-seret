@@ -16,7 +16,7 @@ namespace {
     v8::Persistent<v8::Object> thisObj;
     v8::Persistent<v8::Function> callback;
   };
-  
+
   class Camera : node::ObjectWrap {
   public:
     static void Init(v8::Handle<v8::Object> exports);
@@ -27,25 +27,26 @@ namespace {
     static v8::Handle<v8::Value> Capture(const v8::Arguments& args);
     static v8::Handle<v8::Value> GetFrameData(const v8::Arguments& args);
     static v8::Handle<v8::Value> ToRGB(const v8::Arguments& args);
+    static v8::Handle<v8::Value> ToGrey(const v8::Arguments& args);
     static v8::Handle<v8::Value> ConfigGet(const v8::Arguments& args);
     static v8::Handle<v8::Value> ConfigSet(const v8::Arguments& args);
     static v8::Handle<v8::Value> ControlGet(const v8::Arguments& args);
     static v8::Handle<v8::Value> ControlSet(const v8::Arguments& args);
-    
-    static v8::Local<v8::Object> Controls(camera_t* camera);  
-    static v8::Local<v8::Object> Formats(camera_t* camera);  
+
+    static v8::Local<v8::Object> Controls(camera_t* camera);
+    static v8::Local<v8::Object> Formats(camera_t* camera);
     static void StopCB(uv_poll_t* handle, int status, int events);
     static void CaptureCB(uv_poll_t* handle, int status, int events);
-    
-    static void 
+
+    static void
     WatchCB(uv_poll_t* handle, void (*callbackCall)(CallbackData* data));
-    static v8::Handle<v8::Value> 
+    static v8::Handle<v8::Value>
     Watch(const v8::Arguments& args, uv_poll_cb cb);
     Camera();
     ~Camera();
     camera_t* camera;
   };
-  
+
   //[error message handling]
   struct LogContext {
     std::string msg;
@@ -65,7 +66,7 @@ namespace {
     }
     static_cast<LogContext*>(pointer)->msg = ss.str();
   }
-  
+
   static inline v8::Handle<v8::Value> throwTypeError(const char* msg) {
     auto message = v8::String::New(msg);
     return v8::ThrowException(v8::Exception::TypeError(message));
@@ -78,7 +79,7 @@ namespace {
     auto ctx = static_cast<LogContext*>(camera->context.pointer);
     return throwError(ctx->msg.c_str());
   }
-  
+
   //[helpers]
   static inline v8::Local<v8::Value>
   getValue(const v8::Local<v8::Object>& self, const char* name) {
@@ -92,61 +93,61 @@ namespace {
   getUint(const v8::Local<v8::Object>& self, const char* name) {
     return getValue(self, name)->Uint32Value();
   }
-  
-  static inline void 
-  setValue(const v8::Local<v8::Object>& self, const char* name, 
+
+  static inline void
+  setValue(const v8::Local<v8::Object>& self, const char* name,
            const v8::Handle<v8::Value>& value) {
     self->Set(v8::String::NewSymbol(name), value);
   }
-  static inline void 
+  static inline void
   setInt(const v8::Local<v8::Object>& self, const char* name, int32_t value) {
     setValue(self, name, v8::Integer::New(value));
   }
-  static inline void 
-  setUint(const v8::Local<v8::Object>& self, const char* name, 
+  static inline void
+  setUint(const v8::Local<v8::Object>& self, const char* name,
           uint32_t value) {
     setValue(self, name, v8::Integer::NewFromUnsigned(value));
   }
-  static inline void 
-  setString(const v8::Local<v8::Object>& self, const char* name, 
+  static inline void
+  setString(const v8::Local<v8::Object>& self, const char* name,
             const char* value) {
     setValue(self, name, v8::String::New(value));
   }
-  static inline void 
+  static inline void
   setBool(const v8::Local<v8::Object>& self, const char* name, bool value) {
     setValue(self, name, v8::Boolean::New(value));
   }
 
   //[callback helpers]
-  void Camera::WatchCB(uv_poll_t* handle, 
+  void Camera::WatchCB(uv_poll_t* handle,
                        void (*callbackCall)(CallbackData* data)) {
     v8::HandleScope scope;
     auto data = static_cast<CallbackData*>(handle->data);
     uv_poll_stop(handle);
-    uv_close(reinterpret_cast<uv_handle_t*>(handle), 
+    uv_close(reinterpret_cast<uv_handle_t*>(handle),
              [](uv_handle_t* handle) -> void {delete handle;});
     callbackCall(data);
     data->thisObj.Dispose();
     data->callback.Dispose();
     delete data;
   }
-  v8::Handle<v8::Value> 
+  v8::Handle<v8::Value>
   Camera::Watch(const v8::Arguments& args, uv_poll_cb cb) {
     v8::HandleScope scope;
     auto data = new CallbackData;
     auto thisObj = args.This();
     data->thisObj = v8::Persistent<v8::Object>::New(thisObj);
-    data->callback = 
+    data->callback =
       v8::Persistent<v8::Function>::New(args[0].As<v8::Function>());
     auto camera = node::ObjectWrap::Unwrap<Camera>(thisObj)->camera;
-    
+
     uv_poll_t* handle = new uv_poll_t;
     handle->data = data;
     uv_poll_init(uv_default_loop(), handle, camera->fd);
     uv_poll_start(handle, UV_READABLE, cb);
     return v8::Undefined();
   }
-  
+
   //[methods]
   static const char* control_type_names[] = {
     "invalid",
@@ -208,7 +209,7 @@ namespace {
     camera_controls_delete(ccontrols);
     return controls;
   }
-  
+
   static v8::Local<v8::Object> convertFormat(camera_format_t* cformat) {
     char name[5];
     camera_format_name(cformat->format, name);
@@ -233,7 +234,7 @@ namespace {
     }
     return formats;
   }
-  
+
   Camera::Camera() : camera(nullptr) {}
   Camera::~Camera() {
     if (camera) {
@@ -242,7 +243,7 @@ namespace {
       delete ctx;
     }
   }
-  
+
   //[members]
   v8::Handle<v8::Value> Camera::New(const v8::Arguments& args) {
     v8::HandleScope scope;
@@ -252,7 +253,7 @@ namespace {
     if (!camera) return throwError(strerror(errno));
     camera->context.pointer = new LogContext;
     camera->context.log = &logRecord;
-    
+
     auto thisObj = args.This();
     auto self = new Camera();
     self->camera = camera;
@@ -272,8 +273,8 @@ namespace {
     setUint(thisObj, "height", camera->height);
     return scope.Close(thisObj);
   }
-  
-  
+
+
   void Camera::StopCB(uv_poll_t* handle, int /*status*/, int /*events*/) {
     auto callCallback = [](CallbackData* data) -> void {
       v8::HandleScope scope;
@@ -289,7 +290,7 @@ namespace {
     if (!camera_stop(camera)) return throwError(camera);
     return Watch(args, StopCB);
   }
-  
+
   void Camera::CaptureCB(uv_poll_t* handle, int /*status*/, int /*events*/) {
     auto callCallback = [](CallbackData* data) -> void {
       v8::HandleScope scope;
@@ -322,7 +323,7 @@ namespace {
       bufferConstructor->NewInstance(3, constructorArgs);
     return actualBuffer;
   }
-  
+
   v8::Handle<v8::Value> Camera::GetFrameData(const v8::Arguments& args) {
     v8::HandleScope scope;
     auto thisObj = args.This();
@@ -330,7 +331,7 @@ namespace {
     int length = camera->head.length;
     return scope.Close(makeBuffer(camera->head.start, length));
   }
-  
+
   v8::Handle<v8::Value> Camera::ToRGB(const v8::Arguments& args) {
     v8::HandleScope scope;
     auto thisObj = args.This();
@@ -339,6 +340,17 @@ namespace {
     int length = camera->width * camera->height * 3;
     auto buffer = makeBuffer(rgb, length);
     free(rgb);
+    return scope.Close(buffer);
+  }
+
+  v8::Handle<v8::Value> Camera::ToGrey(const v8::Arguments& args) {
+    v8::HandleScope scope;
+    auto thisObj = args.This();
+    auto camera = node::ObjectWrap::Unwrap<Camera>(thisObj)->camera;
+    auto grey = yuyv2grey(camera->head.start, camera->width, camera->height);
+    int length = camera->width * camera->height;
+    auto buffer = makeBuffer(grey, length);
+    free(grey);
     return scope.Close(buffer);
   }
 
@@ -351,7 +363,7 @@ namespace {
     auto format = convertFormat(&cformat);
     return scope.Close(format);
   }
-  
+
   v8::Handle<v8::Value> Camera::ConfigSet(const v8::Arguments& args) {
     v8::HandleScope scope;
     if (args.Length() < 1) throwTypeError("argument required: config");
@@ -374,7 +386,7 @@ namespace {
     setUint(thisObj, "height", camera->height);
     return scope.Close(thisObj);
   }
-  
+
   v8::Handle<v8::Value> Camera::ControlGet(const v8::Arguments& args) {
     v8::HandleScope scope;
     if (args.Length() < 1) return throwTypeError("an argument required: id");
@@ -386,10 +398,10 @@ namespace {
     if (!success) return throwError(camera);
     return scope.Close(v8::Integer::New(value));
   }
-  
+
   v8::Handle<v8::Value> Camera::ControlSet(const v8::Arguments& args) {
     v8::HandleScope scope;
-    if (args.Length() < 2) 
+    if (args.Length() < 2)
       return throwTypeError("arguments required: id, value");
     uint32_t id = args[0]->Uint32Value();
     int32_t value = args[1]->Int32Value();
@@ -399,11 +411,11 @@ namespace {
     if (!success) return throwError(camera);
     return scope.Close(thisObj);
   }
-  
-  
+
+
   //[module init]
-  static inline void 
-  setMethod(const v8::Local<v8::ObjectTemplate>& proto, const char* name, 
+  static inline void
+  setMethod(const v8::Local<v8::ObjectTemplate>& proto, const char* name,
             v8::Handle<v8::Value> (*func)(const v8::Arguments& args)) {
     auto funcValue = v8::FunctionTemplate::New(func)->GetFunction();
     proto->Set(v8::String::NewSymbol(name), funcValue);
@@ -421,6 +433,7 @@ namespace {
     setMethod(proto, "getFrameData", GetFrameData);
     setMethod(proto, "toYUYV", GetFrameData);
     setMethod(proto, "toRGB", ToRGB);
+    setMethod(proto, "toGrey", ToGrey);
     setMethod(proto, "configGet", ConfigGet);
     setMethod(proto, "configSet", ConfigSet);
     setMethod(proto, "controlGet", ControlGet);

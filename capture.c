@@ -50,7 +50,7 @@ camera_t* camera_open(const char * device)
 {
   int fd = open(device, O_RDWR | O_NONBLOCK, 0);
   if (fd == -1) return NULL;
-  
+
   camera_t* camera = malloc(sizeof (camera_t));
   camera->fd = fd;
   camera->initialized = false;
@@ -124,8 +124,8 @@ static bool camera_buffer_prepare(camera_t* camera)
     }
     if (buf.length > buf_max) buf_max = buf.length;
     camera->buffers[i].length = buf.length;
-    camera->buffers[i].start = 
-      mmap(NULL, buf.length, PROT_READ | PROT_WRITE, MAP_SHARED, 
+    camera->buffers[i].start =
+      mmap(NULL, buf.length, PROT_READ | PROT_WRITE, MAP_SHARED,
            camera->fd, buf.m.offset);
     if (camera->buffers[i].start == MAP_FAILED) {
       free_buffers(camera, i);
@@ -171,10 +171,10 @@ static bool camera_load(camera_t* camera)
 bool camera_stop(camera_t* camera)
 {
   enum v4l2_buf_type type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-  if (xioctl(camera->fd, VIDIOC_STREAMOFF, &type) == -1) 
+  if (xioctl(camera->fd, VIDIOC_STREAMOFF, &type) == -1)
     return error(camera, "VIDIOC_STREAMOFF");
   camera_buffer_finish(camera);
-  
+
   struct v4l2_requestbuffers req;
   memset(&req, 0, sizeof req);
   req.count = 0;
@@ -195,12 +195,12 @@ bool camera_start(camera_t* camera)
     buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
     buf.memory = V4L2_MEMORY_MMAP;
     buf.index = i;
-    if (xioctl(camera->fd, VIDIOC_QBUF, &buf) == -1) 
+    if (xioctl(camera->fd, VIDIOC_QBUF, &buf) == -1)
       return error(camera, "VIDIOC_QBUF");
   }
-  
+
   enum v4l2_buf_type type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-  if (xioctl(camera->fd, VIDIOC_STREAMON, &type) == -1) 
+  if (xioctl(camera->fd, VIDIOC_STREAMON, &type) == -1)
     return error(camera, "VIDIOC_STREAMON");
   return true;
 }
@@ -285,6 +285,18 @@ uint8_t* yuyv2rgb(uint8_t* yuyv, uint32_t width, uint32_t height)
   return rgb;
 }
 
+uint8_t* yuyv2grey(uint8_t* yuyv, uint32_t width, uint32_t height)
+{
+  uint8_t* grey = calloc(width * height, sizeof (uint8_t));
+  uint8_t* greyp = grey;
+  for (size_t i = 0; i < height; i++) {
+    for (size_t j = 0; j < width; j++) {
+      *greyp++ = *yuyv;
+      yuyv += 2;
+    }
+  }
+  return grey;
+}
 
 //[formats and config]
 uint32_t camera_format_id(const char* name)
@@ -323,7 +335,7 @@ static bool camera_format_set(camera_t* camera, camera_format_t* format)
     parm.parm.capture.timeperframe.numerator = format->interval.numerator;
     parm.parm.capture.timeperframe.denominator = format->interval.denominator;
     if (xioctl(camera->fd, VIDIOC_S_PARM, &parm) == -1)
-      return error(camera, "VIDIOC_S_PARM");    
+      return error(camera, "VIDIOC_S_PARM");
   }
   return true;
 }
@@ -335,11 +347,11 @@ static bool camera_format_get(camera_t* camera, camera_format_t* format)
   vformat.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
   if (xioctl(camera->fd, VIDIOC_G_FMT, &vformat) == -1)
     return error(camera, "VIDIOC_G_FMT");
-  
+
   format->format = vformat.fmt.pix.pixelformat;
   format->width = vformat.fmt.pix.width;
   format->height = vformat.fmt.pix.height;
-  
+
   struct v4l2_streamparm parm;
   memset(&parm, 0, sizeof parm);
   parm.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
@@ -386,7 +398,7 @@ camera_formats_t*  camera_formats_new(camera_t* camera)
       frmsize.pixel_format = fmt.pixelformat;
       if (ioctl(camera->fd, VIDIOC_ENUM_FRAMESIZES, &frmsize) == -1) break;
       if (frmsize.type == V4L2_FRMSIZE_TYPE_DISCRETE) {
-        //printf("- w: %d, h: %d\n", 
+        //printf("- w: %d, h: %d\n",
         //       frmsize.discrete.width, frmsize.discrete.height);
         for (uint32_t k = 0; ; k++) {
           struct v4l2_frmivalenum frmival;
@@ -395,12 +407,12 @@ camera_formats_t*  camera_formats_new(camera_t* camera)
           frmival.pixel_format = fmt.pixelformat;
           frmival.width = frmsize.discrete.width;
           frmival.height = frmsize.discrete.height;
-          if (ioctl(camera->fd, VIDIOC_ENUM_FRAMEINTERVALS, &frmival) == -1) 
+          if (ioctl(camera->fd, VIDIOC_ENUM_FRAMEINTERVALS, &frmival) == -1)
             break;
           if (frmival.type == V4L2_FRMIVAL_TYPE_DISCRETE) {
-            //printf("  - fps: %d/%d\n", 
+            //printf("  - fps: %d/%d\n",
             //       frmival.discrete.denominator,frmival.discrete.numerator);
-            ret->head = 
+            ret->head =
               realloc(ret->head, (ret->length + 1) * sizeof (camera_format_t));
             ret->head[ret->length].format = fmt.pixelformat;
             ret->head[ret->length].width = frmsize.discrete.width;
@@ -411,7 +423,7 @@ camera_formats_t*  camera_formats_new(camera_t* camera)
               frmival.discrete.denominator;
             ret->length++;
           } else {
-            //printf("  - fps: %d/%d-%d/%d\n", 
+            //printf("  - fps: %d/%d-%d/%d\n",
             //       frmival.stepwise.min.denominator,
             //       frmival.stepwise.min.numerator,
             //       frmival.stepwise.max.denominator,
@@ -420,13 +432,13 @@ camera_formats_t*  camera_formats_new(camera_t* camera)
           }
         }
       } else {
-        //printf("- w: %d-%d, h: %d-%d\n", 
+        //printf("- w: %d-%d, h: %d-%d\n",
         //       frmsize.stepwise.min_width, frmsize.stepwise.max_width,
         //      frmsize.stepwise.min_height, frmsize.stepwise.max_height);
         // TBD: when stepwize
       }
     }
-    
+
   }
   return ret;
 }
@@ -438,19 +450,19 @@ void camera_formats_delete(camera_formats_t* formats)
 
 
 //[controls]
-static void 
+static void
 camera_menu_copy(camera_menu_t* menu, struct v4l2_querymenu* qmenu)
 {
   memcpy(menu->name, qmenu->name, sizeof qmenu->name);
 }
 #ifndef CAMERA_OLD_VIDEODEV2_H
-static void 
+static void
 camera_integer_menu_copy(camera_menu_t* menu, struct v4l2_querymenu* qmenu)
 {
   menu->value = qmenu->value;
 }
 #endif
-static void 
+static void
 camera_controls_menus(camera_t* camera, camera_control_t* control)
 {
   void (*copy)(camera_menu_t*, struct v4l2_querymenu*) = &camera_menu_copy;
@@ -479,11 +491,11 @@ camera_controls_menus(camera_t* camera, camera_control_t* control)
     }
   }
 }
-static camera_control_t* 
+static camera_control_t*
 camera_controls_query(camera_t* camera, camera_control_t* control_list)
 {
   camera_control_t* control_list_last = control_list;
-  
+
   for (uint32_t cid = V4L2_CID_USER_BASE; cid < V4L2_CID_LASTP1; cid++) {
     struct v4l2_queryctrl qctrl;
     memset(&qctrl, 0, sizeof qctrl);
@@ -499,7 +511,7 @@ camera_controls_query(camera_t* camera, camera_control_t* control_list)
     control->flags.inactive = (qctrl.flags & V4L2_CTRL_FLAG_INACTIVE) != 0;
     control->flags.slider = (qctrl.flags & V4L2_CTRL_FLAG_SLIDER) != 0;
     control->flags.write_only = (qctrl.flags & V4L2_CTRL_FLAG_WRITE_ONLY) != 0;
-    control->flags.volatile_value = 
+    control->flags.volatile_value =
       (qctrl.flags & V4L2_CTRL_FLAG_VOLATILE) != 0;
     control->type = qctrl.type;
     control->max = qctrl.maximum;
@@ -513,7 +525,7 @@ camera_controls_query(camera_t* camera, camera_control_t* control_list)
 camera_controls_t* camera_controls_new(camera_t* camera)
 {
   camera_control_t control_list[V4L2_CID_LASTP1 - V4L2_CID_USER_BASE];
-  camera_control_t* control_list_last = 
+  camera_control_t* control_list_last =
     camera_controls_query(camera, control_list);
   camera_controls_t* controls = malloc(sizeof (camera_controls_t));
   controls->length = control_list_last - control_list;
@@ -537,7 +549,7 @@ bool camera_control_get(camera_t* camera, uint32_t id, int32_t* value)
   struct v4l2_control ctrl;
   ctrl.id = id;
   ctrl.value = 0;
-  if (ioctl(camera->fd, VIDIOC_G_CTRL, &ctrl) == -1) 
+  if (ioctl(camera->fd, VIDIOC_G_CTRL, &ctrl) == -1)
     return error(camera, "VIDIOC_G_CTRL");
   *value = ctrl.value;
   return true;
@@ -548,7 +560,7 @@ bool camera_control_set(camera_t* camera, uint32_t id, int32_t value)
   struct v4l2_control ctrl;
   ctrl.id = id;
   ctrl.value = value;
-  if (ioctl(camera->fd, VIDIOC_S_CTRL, &ctrl) == -1) 
+  if (ioctl(camera->fd, VIDIOC_S_CTRL, &ctrl) == -1)
     return error(camera, "VIDIOC_S_CTRL");
   return true;
 }

@@ -8,3 +8,5 @@ list-formats
 *.o
 result*.png
 result*.jpg
+
+sftp-config.json
