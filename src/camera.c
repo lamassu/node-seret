@@ -362,12 +362,3 @@ void capture_frame(int fd, char *result_buf, size_t result_size)
 		/* EAGAIN - continue select loop. */
 	}
 }
-
-/*
-int main(int argc, char **argv)
-{
-	int fd = camera_on("/dev/video0", 960, 720);
-	camera_capture(fd);
-	camera_off(fd);
-}
-*/

@@ -1,28 +1,28 @@
 'use strict';
 
-var fs = require('fs');
-var async = require('async');
-
 var cam = require('./build/Release/seret');
+var fd = null;
+var buffer = null;
+var width = null;
+var height = null;
 
-var fd = cam.cameraOn('/dev/video0', 960, 720);
-var buffer = new Buffer(960 * 720);
+exports.startCapture = function startCapture(device, newBuffer, newWidth, newHeight) {
+  width = newWidth;
+  height = newHeight;
+  buffer = newBuffer;
+  fd = cam.cameraOn(device, width, height);
+  cam.startCapture(fd);
+};
 
-var t0 = Date.now();
-setInterval(function() { var elapsed = (Date.now() - t0) / 1000; console.log('ping: %d', elapsed); }, 1000);
-cam.startCapture(fd);
-
-function captureFrame() {
-  cam.captureFrame(fd, buffer);
-}
-
-async.timesSeries(100, function(i, next) {
-  if (i % 10 === 0) console.log(i);
-  captureFrame();
-  fs.writeFileSync('./result.gray', buffer);
-  setTimeout(next, 10);
-}, function() {
+exports.stopCapture = function stopCapture() {
   cam.stopCapture(fd);
   cam.cameraOff(fd);
-});
+  fd = null;
+  width = null;
+  height = null;
+  buffer = null;
+};
 
+exports.captureFrame = function captureFrame() {
+  cam.captureFrame(fd, buffer);
+};
