@@ -35,7 +35,6 @@ struct buffer {
 
 struct buffer          *buffers;
 static unsigned int     n_buffers;
-static int              out_buf;
 
 static void errno_exit(const char *s)
 {
@@ -54,20 +53,27 @@ static int xioctl(int fh, int request, void *arg)
 	return r;
 }
 
-static void process_image(const void *p, int size)
+/* Converts YUYV to greyscale */
+static void process_image(const char *yuyv, size_t size,
+	char *result_buf, size_t result_size)
 {
-	if (out_buf)
-		fwrite(p, size, 1, stdout);
+  size_t i;
+  char* greyp = result_buf;
 
-	fflush(stderr);
-	fprintf(stderr, ".");
-	fflush(stdout);
+	if (size != result_size * 2) {
+		fprintf(stderr, "Camera image size and output buffer size not compatible");
+		exit(EXIT_FAILURE);
+	}
+
+  for (i = 0; i < result_size; i++) {
+    *greyp++ = *yuyv;
+    yuyv += 2;
+  }
 }
 
-static int read_frame(int fd)
+static int read_frame(int fd, char *result_buf, size_t result_size)
 {
 	struct v4l2_buffer buf;
-	unsigned int i;
 
 	CLEAR(buf);
 
@@ -91,7 +97,7 @@ static int read_frame(int fd)
 
 	assert(buf.index < n_buffers);
 
-	process_image(buffers[buf.index].start, buf.bytesused);
+	process_image(buffers[buf.index].start, buf.bytesused, result_buf, result_size);
 
 	if (-1 == xioctl(fd, VIDIOC_QBUF, &buf))
 		errno_exit("VIDIOC_QBUF");
@@ -99,76 +105,7 @@ static int read_frame(int fd)
 	return 1;
 }
 
-static void mainloop(int fd)
-{
-	unsigned int count;
-
-	count = 70;
-
-	while (count-- > 0) {
-		for (;;) {
-			fd_set fds;
-			struct timeval tv;
-			int r;
-
-			FD_ZERO(&fds);
-			FD_SET(fd, &fds);
-
-			/* Timeout. */
-			tv.tv_sec = 2;
-			tv.tv_usec = 0;
-
-			r = select(fd + 1, &fds, NULL, NULL, &tv);
-
-			if (-1 == r) {
-				if (EINTR == errno)
-					continue;
-				errno_exit("select");
-			}
-
-			if (0 == r) {
-				fprintf(stderr, "select timeout\n");
-				exit(EXIT_FAILURE);
-			}
-
-			if (read_frame(fd))
-				break;
-			/* EAGAIN - continue select loop. */
-		}
-	}
-}
-
-static void stop_capturing(int fd)
-{
-	enum v4l2_buf_type type;
-
-	type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-	if (-1 == xioctl(fd, VIDIOC_STREAMOFF, &type))
-		errno_exit("VIDIOC_STREAMOFF");
-}
-
-static void start_capturing(int fd)
-{
-	unsigned int i;
-	enum v4l2_buf_type type;
-
-	for (i = 0; i < n_buffers; ++i) {
-		struct v4l2_buffer buf;
-
-		CLEAR(buf);
-		buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-		buf.memory = V4L2_MEMORY_MMAP;
-		buf.index = i;
-
-		if (-1 == xioctl(fd, VIDIOC_QBUF, &buf))
-			errno_exit("VIDIOC_QBUF");
-	}
-	type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-	if (-1 == xioctl(fd, VIDIOC_STREAMON, &type))
-		errno_exit("VIDIOC_STREAMON");
-}
-
-static void uninit_device(int fd)
+static void uninit_device()
 {
 	unsigned int i;
 
@@ -324,6 +261,7 @@ static void close_device(int fd)
 static int open_device(char *dev_name)
 {
 	struct stat st;
+	int fd;
 
 	if (-1 == stat(dev_name, &st)) {
 		fprintf(stderr, "Cannot identify '%s': %d, %s\n",
@@ -336,7 +274,7 @@ static int open_device(char *dev_name)
 		exit(EXIT_FAILURE);
 	}
 
-	int fd = open(dev_name, O_RDWR /* required */ | O_NONBLOCK, 0);
+	fd = open(dev_name, O_RDWR /* required */ | O_NONBLOCK, 0);
 
 	if (-1 == fd) {
 		fprintf(stderr, "Cannot open '%s': %d, %s\n",
@@ -347,6 +285,8 @@ static int open_device(char *dev_name)
 	return fd;
 }
 
+/* Public interface */
+
 int camera_on(char *dev_name, uint32_t width, uint32_t height)
 {
 	int fd = open_device(dev_name);
@@ -354,22 +294,80 @@ int camera_on(char *dev_name, uint32_t width, uint32_t height)
 	return fd;
 }
 
-void camera_capture(int fd)
-{
-	start_capturing(fd);
-	mainloop(fd);
-	stop_capturing(fd);
-}
-
 void camera_off(int fd)
 {
-	uninit_device(fd);
+	uninit_device();
 	close_device(fd);
 }
 
+void start_capturing(int fd)
+{
+	unsigned int i;
+	enum v4l2_buf_type type;
+
+	for (i = 0; i < n_buffers; ++i) {
+		struct v4l2_buffer buf;
+
+		CLEAR(buf);
+		buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+		buf.memory = V4L2_MEMORY_MMAP;
+		buf.index = i;
+
+		if (-1 == xioctl(fd, VIDIOC_QBUF, &buf))
+			errno_exit("VIDIOC_QBUF");
+	}
+	type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+	if (-1 == xioctl(fd, VIDIOC_STREAMON, &type))
+		errno_exit("VIDIOC_STREAMON");
+}
+
+void stop_capturing(int fd)
+{
+	enum v4l2_buf_type type;
+
+	type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+	if (-1 == xioctl(fd, VIDIOC_STREAMOFF, &type))
+		errno_exit("VIDIOC_STREAMOFF");
+}
+
+void capture_frame(int fd, char *result_buf, size_t result_size)
+{
+	for (;;) {
+		fd_set fds;
+		struct timeval tv;
+		int r;
+
+		FD_ZERO(&fds);
+		FD_SET(fd, &fds);
+
+		/* Timeout. */
+		tv.tv_sec = 2;
+		tv.tv_usec = 0;
+
+		r = select(fd + 1, &fds, NULL, NULL, &tv);
+
+		if (-1 == r) {
+			if (EINTR == errno)
+				continue;
+			errno_exit("select");
+		}
+
+		if (0 == r) {
+			fprintf(stderr, "select timeout\n");
+			exit(EXIT_FAILURE);
+		}
+
+		if (read_frame(fd, result_buf, result_size))
+			break;
+		/* EAGAIN - continue select loop. */
+	}
+}
+
+/*
 int main(int argc, char **argv)
 {
 	int fd = camera_on("/dev/video0", 960, 720);
 	camera_capture(fd);
 	camera_off(fd);
 }
+*/
