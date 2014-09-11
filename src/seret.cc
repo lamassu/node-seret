@@ -98,6 +98,24 @@ Handle<Value> CaptureFrame(const Arguments& args) {
   return scope.Close(Null());
 }
 
+Handle<Value> ControlSet(const Arguments& args) {
+  HandleScope scope;
+
+  if (args.Length() != 3) {
+    return ThrowException(
+      Exception::TypeError(String::New("captureFrame requires 3 arguments"))
+    );
+  }
+
+  int fd = args[0]->IntegerValue();
+  uint32_t id = args[1]->Uint32Value();
+  int32_t value = args[2]->Int32Value();
+
+  control_set(fd, id, value);
+
+  return scope.Close(Null());
+}
+
 void RegisterModule(Handle<Object> target) {
 
   // target is the module object you see when require()ing the .node file.
@@ -111,6 +129,8 @@ void RegisterModule(Handle<Object> target) {
     FunctionTemplate::New(StopCapture)->GetFunction());
   target->Set(String::NewSymbol("captureFrame"),
     FunctionTemplate::New(CaptureFrame)->GetFunction());
+  target->Set(String::NewSymbol("controlSet"),
+    FunctionTemplate::New(ControlSet)->GetFunction());
 }
 
 NODE_MODULE(seret, RegisterModule)

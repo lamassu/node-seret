@@ -23,7 +23,6 @@
 #include <sys/mman.h>
 #include <sys/ioctl.h>
 #include <stdint.h>
-
 #include <linux/videodev2.h>
 
 #define CLEAR(x) memset(&(x), 0, sizeof(x))
@@ -287,6 +286,19 @@ static int open_device(char *dev_name)
 
 /* Public interface */
 
+void control_set(int fd, uint32_t id, int32_t value)
+{
+	struct v4l2_control control;
+	CLEAR(control);
+	control.id = id;
+	control.value = value;
+
+	if (-1 == ioctl(fd, VIDIOC_S_CTRL, &control)) {
+		perror("VIDIOC_S_CTRL");
+		exit(EXIT_FAILURE);
+	}
+}
+
 int camera_on(char *dev_name, uint32_t width, uint32_t height)
 {
 	int fd = open_device(dev_name);
@@ -362,3 +374,31 @@ void capture_frame(int fd, char *result_buf, size_t result_size)
 		/* EAGAIN - continue select loop. */
 	}
 }
+
+/*
+int main()
+{
+	char *buf = malloc(960 * 720);
+	int fd = camera_on("/dev/video0", 960, 720);
+	control_set(fd, 0x9a0901, 1);
+	control_set(fd, 0x9a0903, 0);
+	control_set(fd, 0x9a0902, 200);
+	start_capturing(fd);
+	capture_frame(fd, buf, 960 * 720);
+	control_set(fd, 0x9a0902, 200);
+	capture_frame(fd, buf, 960 * 720);
+	control_set(fd, 0x9a0902, 15);
+	printf("Captured\n");
+	stop_capturing(fd);
+
+	start_capturing(fd);
+	capture_frame(fd, buf, 960 * 720);
+	printf("Captured\n");
+	stop_capturing(fd);
+
+	camera_off(fd);
+	free(buf);
+
+	return 0;
+}
+*/

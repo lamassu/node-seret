@@ -4,4 +4,5 @@ extern "C" {
   void start_capturing(int fd);
   void stop_capturing(int fd);
   void capture_frame(int fd, char *result_buf, size_t result_size);
+  void control_set(int fd, uint32_t id, int32_t value);
 }
