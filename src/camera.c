@@ -231,7 +231,7 @@ static void init_device(int fd, uint32_t width, uint32_t height)
 	fmt.fmt.pix.width       = width;
 	fmt.fmt.pix.height      = height;
 	fmt.fmt.pix.pixelformat = V4L2_PIX_FMT_YUYV;
-	fmt.fmt.pix.field       = V4L2_FIELD_NONE;
+	fmt.fmt.pix.field       = V4L2_FIELD_ANY;
 
 	if (-1 == xioctl(fd, VIDIOC_S_FMT, &fmt))
 		errno_exit("VIDIOC_S_FMT");
@@ -342,7 +342,7 @@ void stop_capturing(int fd)
 		errno_exit("VIDIOC_STREAMOFF");
 }
 
-void capture_frame(int fd, char *result_buf, size_t result_size)
+int capture_frame(int fd, char *result_buf, size_t result_size)
 {
 	for (;;) {
 		fd_set fds;
@@ -366,39 +366,27 @@ void capture_frame(int fd, char *result_buf, size_t result_size)
 
 		if (0 == r) {
 			fprintf(stderr, "select timeout\n");
-			exit(EXIT_FAILURE);
+			return -1;
 		}
 
 		if (read_frame(fd, result_buf, result_size))
 			break;
 		/* EAGAIN - continue select loop. */
 	}
+
+	return 0;
 }
 
-/*
 int main()
 {
 	char *buf = malloc(960 * 720);
 	int fd = camera_on("/dev/video0", 960, 720);
-	control_set(fd, 0x9a0901, 1);
-	control_set(fd, 0x9a0903, 0);
-	control_set(fd, 0x9a0902, 200);
-	start_capturing(fd);
-	capture_frame(fd, buf, 960 * 720);
-	control_set(fd, 0x9a0902, 200);
-	capture_frame(fd, buf, 960 * 720);
-	control_set(fd, 0x9a0902, 15);
-	printf("Captured\n");
-	stop_capturing(fd);
-
 	start_capturing(fd);
 	capture_frame(fd, buf, 960 * 720);
 	printf("Captured\n");
 	stop_capturing(fd);
-
 	camera_off(fd);
 	free(buf);
 
 	return 0;
 }
-*/
