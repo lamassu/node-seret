@@ -22,8 +22,7 @@ var height = null;
 //   try using the src_v4l2.c module from fswebcam and see if the problem goes
 //   away. if so, we could either continue using it, or simplify until we find
 //   what's causing the issue.
-// - also: test just C portion, to see if it's something related to the node addon.
-// - update: latest code has been stable so far regarding (1)
+// - also: test just C portion, to see if it's something related to the node addon. use 10s timeout.
 // - for (2) catch error, retry
 
 exports.cameraOn = function cameraOn(device, newBuffer, newWidth, newHeight) {
