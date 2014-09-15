@@ -33,5 +33,8 @@
   },
   "os": [
     "linux"
-  ]
+  ],
+  "dependencies": {
+    "async": "~0.9.0"
+  }
 }

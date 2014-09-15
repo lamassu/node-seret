@@ -1,29 +1,14 @@
 'use strict';
 
+var async = require('async');
 var cam = require('./build/Release/seret');
 var fd = null;
 var buffer = null;
 var width = null;
 var height = null;
 
-// TODO:
-// Add JPEG processing
-// Stability issues on Nexus7:
-// Problem:
-// 1. frequent select timeouts
-// 2. VIDIOC_STREAMON error 27, File too large
-// Possible solutions:
-// - allow dynamic adjustment of timeout
-// - fswebcam seems more stable, see what it's doing differently
-// - after more testing, fswebcam is clearly doing something different
-//   this current code has a problem, likely in setup, that's causing
-//   the frequent select timeouts while this appears to never happen with
-//   fswebcam.
-//   try using the src_v4l2.c module from fswebcam and see if the problem goes
-//   away. if so, we could either continue using it, or simplify until we find
-//   what's causing the issue.
-// - also: test just C portion, to see if it's something related to the node addon. use 10s timeout.
-// - for (2) catch error, retry
+var FPS = 10;
+var DELAY = 1000 / FPS;
 
 exports.cameraOn = function cameraOn(device, newBuffer, newWidth, newHeight) {
   width = newWidth;
@@ -48,9 +33,21 @@ exports.stopCapture = function stopCapture() {
   cam.stopCapture(fd);
 };
 
-exports.captureFrame = function captureFrame() {
-  var res = cam.captureFrame(fd, buffer);
-  return (res === 0);
+exports.captureFrame = function captureFrame(callback) {
+  var success = false;
+
+  function test() {
+    return success;
+  }
+
+  function capture(_callback) {
+    var result = cam.captureFrame(fd, buffer);
+    success = (result === 1);
+    if (success) return _callback();
+    setTimeout(_callback, DELAY);
+  }
+
+  async.doUntil(capture, test, callback);
 };
 
 // Note: This must be called either between cameraOn and startCapture

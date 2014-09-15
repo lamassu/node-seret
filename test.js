@@ -10,7 +10,6 @@ var count = 0;
 function captureRun() {
   console.log('count: %d', count);
   count++;
-  var t0 = Date.now();
 
   seret.cameraOn('/dev/video0', buffer, 960, 720);
   console.log(1);
@@ -46,11 +45,14 @@ function captureRun() {
 
   */
 
-  var success = seret.captureFrame();
-  console.dir(success);
-
-  seret.stopCapture();
-  seret.cameraOff();
+  seret.captureFrame(function() {
+    console.log('got frame');
+    fs.writeFileSync('./result.gray', buffer);
+    seret.stopCapture();
+    seret.cameraOff();
+  });
 }
 
+setInterval(function() { console.log('doing stuff'); }, 66);
 captureRun();
+
