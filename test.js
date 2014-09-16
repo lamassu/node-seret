@@ -53,6 +53,5 @@ function captureRun() {
   });
 }
 
-setInterval(function() { console.log('doing stuff'); }, 66);
 captureRun();
 

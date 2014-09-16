@@ -57,7 +57,11 @@ Handle<Value> StartCapture(const Arguments& args) {
 
   int fd = args[0]->IntegerValue();
 
-  start_capturing(fd);
+  int success = 0;
+  do {
+    success = (0 == start_capturing(fd));
+    if (!success) stop_capturing(fd);
+  } while (!success);
 
   return scope.Close(Null());
 }

@@ -47,6 +47,7 @@ static int xioctl(int fh, int request, void *arg)
 
 	do {
 		r = ioctl(fh, request, arg);
+		if (-1 == r) fprintf(stderr, "error %d, %s\n", errno, strerror(errno));
 	} while (-1 == r && EINTR == errno);
 
 	return r;
@@ -278,7 +279,7 @@ void camera_off(int fd)
 	close_device(fd);
 }
 
-void start_capturing(int fd)
+int start_capturing(int fd)
 {
 	unsigned int i;
 	enum v4l2_buf_type type;
@@ -295,8 +296,11 @@ void start_capturing(int fd)
 			errno_exit("VIDIOC_QBUF");
 	}
 	type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-	if (-1 == xioctl(fd, VIDIOC_STREAMON, &type))
-		errno_exit("VIDIOC_STREAMON");
+	if (-1 == xioctl(fd, VIDIOC_STREAMON, &type)){
+		return -errno;
+	}
+
+	return 0;
 }
 
 void stop_capturing(int fd)

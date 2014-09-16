@@ -9,6 +9,7 @@ var height = null;
 
 var FPS = 10;
 var DELAY = 1000 / FPS;
+var TIMEOUT = 3000;
 
 exports.cameraOn = function cameraOn(device, newBuffer, newWidth, newHeight) {
   width = newWidth;
@@ -35,6 +36,7 @@ exports.stopCapture = function stopCapture() {
 
 exports.captureFrame = function captureFrame(callback) {
   var success = false;
+  var t0 = Date.now();
 
   function test() {
     return success;
@@ -44,6 +46,13 @@ exports.captureFrame = function captureFrame(callback) {
     var result = cam.captureFrame(fd, buffer);
     success = (result === 1);
     if (success) return _callback();
+    var timedOut = Date.now() - t0 > TIMEOUT;
+    if (timedOut) {
+      console.log('Capture timed out, restarting...');
+      exports.stopCapture(fd);
+      exports.startCapture(fd);
+      t0 = Date.now();
+    }
     setTimeout(_callback, DELAY);
   }
 
