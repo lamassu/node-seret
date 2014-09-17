@@ -9,13 +9,13 @@ var height = null;
 
 var FPS = 10;
 var DELAY = 1000 / FPS;
-var TIMEOUT = 3000;
+var TIMEOUT = 5000;
 
 exports.cameraOn = function cameraOn(device, newBuffer, newWidth, newHeight) {
   width = newWidth;
   height = newHeight;
   buffer = newBuffer;
-  fd = cam.cameraOn(device, width, height);
+  fd = cam.cameraOn(device, width, height, FPS);
 };
 
 exports.cameraOff = function cameraOff() {
