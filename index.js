@@ -15,7 +15,7 @@ exports.cameraOn = function cameraOn(device, newBuffer, newWidth, newHeight) {
   width = newWidth;
   height = newHeight;
   buffer = newBuffer;
-  fd = cam.cameraOn(device, width, height, FPS);
+  fd = cam.cameraOn(device, width, height);
 };
 
 exports.cameraOff = function cameraOff() {
@@ -35,28 +35,10 @@ exports.stopCapture = function stopCapture() {
 };
 
 exports.captureFrame = function captureFrame(callback) {
-  var success = false;
-  var t0 = Date.now();
-
-  function test() {
-    return success;
-  }
-
-  function capture(_callback) {
-    var result = cam.captureFrame(fd, buffer);
-    success = (result === 1);
-    if (success) return _callback();
-    var timedOut = Date.now() - t0 > TIMEOUT;
-    if (timedOut) {
-      console.log('Capture timed out, restarting...');
-      exports.stopCapture(fd);
-      exports.startCapture(fd);
-      t0 = Date.now();
-    }
-    setTimeout(_callback, DELAY);
-  }
-
-  async.doUntil(capture, test, callback);
+  console.log('DEBUG1');
+  var size = cam.captureFrame(fd, buffer);
+  console.log('DEBUG2');
+  callback(null, size);
 };
 
 // Note: This must be called either between cameraOn and startCapture
