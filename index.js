@@ -35,9 +35,7 @@ exports.stopCapture = function stopCapture() {
 };
 
 exports.captureFrame = function captureFrame(callback) {
-  console.log('DEBUG1');
   var size = cam.captureFrame(fd, buffer);
-  console.log('DEBUG2');
   callback(null, size);
 };
 

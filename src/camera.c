@@ -129,8 +129,6 @@ static int verify_jpeg_dht(uint8_t *src,  uint32_t lsrc,
 	/* If no SOS was found, insert the DHT directly after the SOI. */
 	if(i == NULL) i = src + 2;
 
-	printf("Inserting DHT segment into JPEG frame.\n");
-
 	*ldst = lsrc + sizeof(dht);
 	*dst  = malloc(*ldst);
 	if(!*dst)	{
@@ -146,31 +144,31 @@ static int verify_jpeg_dht(uint8_t *src,  uint32_t lsrc,
 	return(1);
 }
 
-static size_t process_image(const char *image, size_t size,
+static int process_image(const char *image, size_t size,
 	char *result_buf, size_t result_size)
 {
 	int dht_result;
-	int jpeg_result;
 	size_t dht_image_size;
 	uint8_t *dht_image;
 	int width, height, jpegSubsamp;
 
-	printf("got image: size %d\n", size);
-
 	dht_result = verify_jpeg_dht((uint8_t *)image, size, &dht_image, &dht_image_size);
 
 	tjhandle handle = tjInitDecompress();
-	tjDecompressHeader2(handle, dht_image, dht_image_size, &width, &height, &jpegSubsamp);
-	jpeg_result = tjDecompress2(handle, dht_image, dht_image_size,
-		(unsigned char *)result_buf, width, 0/*pitch*/,
-		height, TJPF_GRAY, TJFLAG_FASTDCT);
+	if (-1 == tjDecompressHeader2(handle, dht_image, dht_image_size,
+			&width, &height, &jpegSubsamp)) {
+		fprintf(stderr, "jpeg header decoding error: %s\n", tjGetErrorStr());
+		return 0;
+	}
 
-	if (dht_result) free(dht_image);
-
-	if (jpeg_result < 0) {
+	if (-1 == tjDecompress2(handle, dht_image, dht_image_size,
+			(unsigned char *)result_buf, width, 0/*pitch*/,
+			height, TJPF_GRAY, TJFLAG_FASTDCT)) {
 		fprintf(stderr, "jpeg decoding error: %s\n", tjGetErrorStr());
 		exit(EXIT_FAILURE);
 	}
+
+	if (dht_result) free(dht_image);
 
 	return 1;
 }
@@ -360,13 +358,13 @@ static int read_frame(int fd, char *result_buf, size_t result_size)
 
 	assert(buf.index < n_buffers);
 
-	size_t size = process_image(buffers[buf.index].start, buf.bytesused,
-		result_buf, result_size);
+	if (-1 == process_image(buffers[buf.index].start, buf.bytesused,
+		result_buf, result_size)) return 0;
 
 	if (-1 == xioctl(fd, VIDIOC_QBUF, &buf))
 		errno_exit("VIDIOC_QBUF");
 
-	return size;
+	return 1;
 }
 
 
@@ -437,13 +435,12 @@ int capture_frame(int fd, char *result_buf, size_t result_size)
 		fd_set fds;
 		struct timeval tv;
 		int r;
-		int actual_size;
 
 		FD_ZERO(&fds);
 		FD_SET(fd, &fds);
 
 		/* Timeout. */
-		tv.tv_sec = 2;
+		tv.tv_sec = 10;
 		tv.tv_usec = 0;
 
 		r = select(fd + 1, &fds, NULL, NULL, &tv);
@@ -459,9 +456,8 @@ int capture_frame(int fd, char *result_buf, size_t result_size)
 			return -1;
 		}
 
-		actual_size = read_frame(fd, result_buf, result_size);
-		if (actual_size)
-			return actual_size;
+		if (read_frame(fd, result_buf, result_size))
+			return 1;
 		/* EAGAIN - continue select loop. */
 	}
 
