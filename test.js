@@ -46,7 +46,7 @@ function captureRun() {
 
   */
 
-  seret.captureFrame(function(err, size) {
+  seret.captureFrame(function() {
     console.log('got frame');
     console.log(Date.now() - t0);
     fs.writeFileSync('./result.gray', buffer);
