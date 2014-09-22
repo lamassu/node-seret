@@ -241,10 +241,11 @@ static void init_mmap(int fd)
 	}
 }
 
-static void init_device(int fd, uint32_t width, uint32_t height)
+static void init_device(int fd, uint32_t width, uint32_t height, uint32_t fps)
 {
 	struct v4l2_capability cap;
 	struct v4l2_format fmt;
+	struct v4l2_streamparm setfps;
 
 	unsigned int min;
 
@@ -273,8 +274,17 @@ static void init_device(int fd, uint32_t width, uint32_t height)
 		exit(EXIT_FAILURE);
 	}
 
-	CLEAR(fmt);
+	CLEAR(setfps);
+	setfps.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+	setfps.parm.capture.timeperframe.numerator = 1;
+	setfps.parm.capture.timeperframe.denominator = fps;
 
+	if(-1 == xioctl(fd, VIDIOC_S_PARM, &setfps)) {
+		fprintf(stderr, "Can't set fps\n");
+		exit(EXIT_FAILURE);
+	}
+
+	CLEAR(fmt);
 	fmt.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
 	fmt.fmt.pix.width       = width;
 	fmt.fmt.pix.height      = height;
@@ -379,14 +389,14 @@ void control_set(int fd, uint32_t id, int32_t value)
 
 	if (-1 == ioctl(fd, VIDIOC_S_CTRL, &control)) {
 		perror("VIDIOC_S_CTRL");
-		exit(EXIT_FAILURE);
+		return;
 	}
 }
 
-int camera_on(char *dev_name, uint32_t width, uint32_t height)
+int camera_on(char *dev_name, uint32_t width, uint32_t height, uint32_t fps)
 {
 	int fd = open_device(dev_name);
-	init_device(fd, width, height);
+	init_device(fd, width, height, fps);
 	return fd;
 }
 
