@@ -1,7 +1,7 @@
 var fs = require('fs');
 var seret = require('./index');
 
-var width = 1280;
+var width = 960;
 var height = 720;
 var buffer = new Buffer(width * height);
 
@@ -46,13 +46,13 @@ function captureRun() {
 
   */
 
-  seret.captureFrame(function() {
-    console.log('got frame');
-    console.log(Date.now() - t0);
-    fs.writeFileSync('./result.gray', buffer);
-    seret.stopCapture();
-    seret.cameraOff();
-  });
+  setInterval(function() {
+    seret.captureFrame(function() {
+      console.log('got frame');
+      console.log(Date.now() - t0);
+      fs.writeFileSync('./result.gray', buffer);
+    });
+  }, 1000);
 }
 
 captureRun();

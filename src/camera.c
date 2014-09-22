@@ -274,16 +274,6 @@ static void init_device(int fd, uint32_t width, uint32_t height, uint32_t fps)
 		exit(EXIT_FAILURE);
 	}
 
-	CLEAR(setfps);
-	setfps.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-	setfps.parm.capture.timeperframe.numerator = 1;
-	setfps.parm.capture.timeperframe.denominator = fps;
-
-	if(-1 == xioctl(fd, VIDIOC_S_PARM, &setfps)) {
-		fprintf(stderr, "Can't set fps\n");
-		exit(EXIT_FAILURE);
-	}
-
 	CLEAR(fmt);
 	fmt.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
 	fmt.fmt.pix.width       = width;
@@ -293,6 +283,16 @@ static void init_device(int fd, uint32_t width, uint32_t height, uint32_t fps)
 
 	if (-1 == xioctl(fd, VIDIOC_S_FMT, &fmt))
 		errno_exit("VIDIOC_S_FMT");
+
+	CLEAR(setfps);
+	setfps.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+	setfps.parm.capture.timeperframe.numerator = 1;
+	setfps.parm.capture.timeperframe.denominator = fps;
+
+	if(-1 == xioctl(fd, VIDIOC_S_PARM, &setfps)) {
+		fprintf(stderr, "Can't set fps\n");
+		exit(EXIT_FAILURE);
+	}
 
 	/* Note VIDIOC_S_FMT may change width and height. */
 
@@ -369,7 +369,10 @@ static int read_frame(int fd, char *result_buf, size_t result_size)
 	assert(buf.index < n_buffers);
 
 	if (-1 == process_image(buffers[buf.index].start, buf.bytesused,
-		result_buf, result_size)) return 0;
+		result_buf, result_size)) {
+			fprintf(stderr, "error with process_image\n");
+			return 0;
+	}
 
 	if (-1 == xioctl(fd, VIDIOC_QBUF, &buf))
 		errno_exit("VIDIOC_QBUF");
@@ -441,5 +444,35 @@ void stop_capturing(int fd)
 
 int capture_frame(int fd, char *result_buf, size_t result_size)
 {
-	return read_frame(fd, result_buf, result_size);
+	for (;;) {
+		fd_set fds;
+		struct timeval tv;
+		int r;
+
+		FD_ZERO(&fds);
+		FD_SET(fd, &fds);
+
+		/* Timeout. */
+		tv.tv_sec = 10;
+		tv.tv_usec = 0;
+
+		r = select(fd + 1, &fds, NULL, NULL, &tv);
+
+		if (-1 == r) {
+			if (EINTR == errno)
+				continue;
+			errno_exit("select");
+		}
+
+		if (0 == r) {
+			fprintf(stderr, "select timeout\n");
+			return -1;
+		}
+
+		if (read_frame(fd, result_buf, result_size))
+			return 1;
+		/* EAGAIN - continue select loop. */
+	}
+
+	return 0;
 }
