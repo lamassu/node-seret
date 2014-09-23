@@ -444,35 +444,5 @@ void stop_capturing(int fd)
 
 int capture_frame(int fd, char *result_buf, size_t result_size)
 {
-	for (;;) {
-		fd_set fds;
-		struct timeval tv;
-		int r;
-
-		FD_ZERO(&fds);
-		FD_SET(fd, &fds);
-
-		/* Timeout. */
-		tv.tv_sec = 10;
-		tv.tv_usec = 0;
-
-		r = select(fd + 1, &fds, NULL, NULL, &tv);
-
-		if (-1 == r) {
-			if (EINTR == errno)
-				continue;
-			errno_exit("select");
-		}
-
-		if (0 == r) {
-			fprintf(stderr, "select timeout\n");
-			return -1;
-		}
-
-		if (read_frame(fd, result_buf, result_size))
-			return 1;
-		/* EAGAIN - continue select loop. */
-	}
-
-	return 0;
+	return read_frame(fd, result_buf, result_size);
 }
