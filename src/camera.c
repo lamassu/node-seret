@@ -158,14 +158,14 @@ static int process_image(const char *image, size_t size,
 	if (-1 == tjDecompressHeader2(handle, dht_image, dht_image_size,
 			&width, &height, &jpegSubsamp)) {
 		fprintf(stderr, "jpeg header decoding error: %s\n", tjGetErrorStr());
-		return 0;
+		return -1;
 	}
 
 	if (-1 == tjDecompress2(handle, dht_image, dht_image_size,
 			(unsigned char *)result_buf, width, 0/*pitch*/,
 			height, TJPF_GRAY, TJFLAG_FASTDCT)) {
 		fprintf(stderr, "jpeg decoding error: %s\n", tjGetErrorStr());
-		exit(EXIT_FAILURE);
+		return -1;
 	}
 
 	if (dht_result) free(dht_image);
@@ -244,6 +244,8 @@ static void init_mmap(int fd)
 static void init_device(int fd, uint32_t width, uint32_t height, uint32_t fps)
 {
 	struct v4l2_capability cap;
+	struct v4l2_cropcap cropcap;
+	struct v4l2_crop crop;
 	struct v4l2_format fmt;
 	struct v4l2_streamparm setfps;
 
@@ -272,6 +274,27 @@ static void init_device(int fd, uint32_t width, uint32_t height, uint32_t fps)
 	if(-1 == xioctl(fd, VIDIOC_S_INPUT, &input)) {
 		fprintf(stderr, "Can't set input\n");
 		exit(EXIT_FAILURE);
+	}
+
+	CLEAR(cropcap);
+	cropcap.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+
+	if (0 == xioctl(fd, VIDIOC_CROPCAP, &cropcap)) {
+		crop.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+		crop.c = cropcap.defrect; /* reset to default */
+
+		if (-1 == xioctl(fd, VIDIOC_S_CROP, &crop)) {
+			switch (errno) {
+			case EINVAL:
+				/* Cropping not supported. */
+				break;
+			default:
+				/* Errors ignored. */
+				break;
+			}
+		}
+	} else {
+		/* Errors ignored. */
 	}
 
 	CLEAR(fmt);
@@ -371,7 +394,7 @@ static int read_frame(int fd, char *result_buf, size_t result_size)
 	if (-1 == process_image(buffers[buf.index].start, buf.bytesused,
 		result_buf, result_size)) {
 			fprintf(stderr, "error with process_image\n");
-			return 0;
+			return -1;
 	}
 
 	if (-1 == xioctl(fd, VIDIOC_QBUF, &buf))

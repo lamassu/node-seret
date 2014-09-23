@@ -44,15 +44,9 @@ exports.captureFrame = function captureFrame(callback) {
 
   function capture(_callback) {
     var result = cam.captureFrame(fd, buffer);
+    if (result < 0) return _callback(new Error('Capture failed'));
     success = (result === 1);
     if (success) return _callback();
-    var timedOut = Date.now() - t0 > TIMEOUT;
-    if (timedOut) {
-      console.log('Capture timed out, restarting...');
-      exports.stopCapture(fd);
-      exports.startCapture(fd);
-      t0 = Date.now();
-    }
     setTimeout(_callback, DELAY);
   }
 
