@@ -1,6 +1,6 @@
 {
   "name": "seret",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "description": "Capturing images from USB(UVC) webcam on linux machines",
   "keywords": [
     "linux",
