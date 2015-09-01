@@ -1,10 +1,10 @@
-# node-v4l2camera
+# node-seret
 
 Capturing images from USB(UVC) webcam on linux machines.
 
 ## Requirements
 
-- node >= 0.10.x
+- node == 0.10.33
 - video4linux2 headers
 - c and c++ compiler with `-std=c11` and `-std=c++11`
     - gcc >= 4.7
@@ -14,23 +14,7 @@ Capturing images from USB(UVC) webcam on linux machines.
 On linux machines:
 
 ```bash
-npm install v4l2camera
-```
-
-- package details: https://npmjs.org/package/v4l2camera
-
-## Usage
-
-```js
-var v4l2camera = require("v4l2camera");
-
-var cam = new v4l2camera.Camera("/dev/video0");
-cam.start();
-cam.capture(function (success) {
-  var rgb = cam.toRGB();
-  require("fs").writeFileSync("result.raw", Buffer(rgb));
-  cam.stop();
-});
+npm install node-seret
 ```
 
 For more detail see: examples/*.js (required "pngjs" or native "png" modules)
@@ -107,12 +91,13 @@ npm install
 cd ../..
 ```
 
-"build/Release/v4l2camera.node" is exist after the build.
+"build/Release/seret.node" is exist after the build.
 
 ## Tested Environments
 
 - Ubuntu raring armhf on BeagleBone Black with USB Buffalo BSW13K10H
 - Ubuntu raring amd64 on Acer Aspire One with its screen facecam
+- Mint linux i5 virtual machine on Lenovo Z570
 
 ## Notes
 
