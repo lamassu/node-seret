@@ -84,16 +84,24 @@ Control API
     - `control.menu`: Array of items. 
       A control value is the index of the menu item when type is `"menu"`.
 
-## Build for Development
+## Build for Development (Updated September 2015)
 
 On linux machines:
+The instructions have been updated to ensure this module can be built as of September 1st, 2015.
 
 ```bash
+'Ensure we use the correct V8 build version (Do Once)'
+npm install -g n
+n 0.10.33
+
+'Configuration fixes for libturbojpeg (Do Once)'
+sudo ln -s /usr/lib/x86_64-linux-gnu/libturbojpeg.so.0.0.0 /usr/lib/x86_64-linux-gnu/libturbojpeg.so
+
 cd myproject
 mkdir -p node_modules
 cd node_modules
-git clone https://github.com/bellbind/node-v4l2camera.git v4l2camera
-cd v4l2camera
+git clone https://github.com/bitstopco/node-seret.git
+cd node-seret
 npm install
 cd ../..
 ```
