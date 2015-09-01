@@ -76,17 +76,25 @@ The instructions have been updated to ensure this module can be built as of Sept
 
 ```bash
 'Ensure we use the correct V8 build version (Do Once)'
+'Configuration fixes for libturbojpeg (Do Once)'
 npm install -g n
 n 0.10.33
+sudo apt-get install libx32gcc-4.8-dev
+sudo apt-get install libc6-dev-i386
+sudo apt-get install linux-libc-dev:i386
+sudo apt-get install gcc-4.9-multilib g++-4.9-multilib
+sudo ln -s /usr/lib/i386-linux-gnu/libturbojpeg.so.0 /usr/lib/i386-linux-gnu/libturbojpeg.so
+sudo ln -s /lib/x86_64-linux-gnu/libc.so.6 /lib/x86_64-linux-gnu/libc.so
 
-'Configuration fixes for libturbojpeg (Do Once)'
-sudo ln -s /usr/lib/x86_64-linux-gnu/libturbojpeg.so.0.0.0 /usr/lib/x86_64-linux-gnu/libturbojpeg.so
 
 cd myproject
 mkdir -p node_modules
 cd node_modules
 git clone https://github.com/bitstopco/node-seret.git
 cd node-seret
+export CFLAGS='-m32'
+export CXXFLAGS='-m32'
+export LDFLAGS='-m32'
 npm install
 cd ../..
 ```
