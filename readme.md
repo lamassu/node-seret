@@ -14,7 +14,9 @@ Capturing images from USB(UVC) webcam on linux machines.
 On linux machines:
 
 ```bash
-npm install node-seret
+'Pull the latest i386 build of libturbojpeg and install it'
+http://sourceforge.net/projects/libjpeg-turbo/files/
+
 ```
 
 For more detail see: examples/*.js (required "pngjs" or native "png" modules)
@@ -83,8 +85,6 @@ sudo apt-get install libx32gcc-4.8-dev
 sudo apt-get install libc6-dev-i386
 sudo apt-get install linux-libc-dev:i386
 sudo apt-get install gcc-4.9-multilib g++-4.9-multilib
-sudo ln -s /usr/lib/i386-linux-gnu/libturbojpeg.so.0 /usr/lib/i386-linux-gnu/libturbojpeg.so
-sudo ln -s /lib/x86_64-linux-gnu/libc.so.6 /lib/x86_64-linux-gnu/libc.so
 
 
 cd myproject
