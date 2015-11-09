@@ -188,7 +188,9 @@ static void init_mmap(int fd)
 {
 	struct v4l2_requestbuffers req;
 
-	CLEAR(req);
+	if (req) {
+		CLEAR(req);
+	}
 
 	req.count = 4;
 	req.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
@@ -219,7 +221,9 @@ static void init_mmap(int fd)
 	for (n_buffers = 0; n_buffers < req.count; ++n_buffers) {
 		struct v4l2_buffer buf;
 
-		CLEAR(buf);
+		if (buf) {
+			CLEAR(buf);
+		}
 
 		buf.type        = V4L2_BUF_TYPE_VIDEO_CAPTURE;
 		buf.memory      = V4L2_MEMORY_MMAP;
@@ -276,7 +280,10 @@ static void init_device(int fd, uint32_t width, uint32_t height, uint32_t fps)
 		exit(EXIT_FAILURE);
 	}
 
-	CLEAR(cropcap);
+	if (cropcap) {
+		CLEAR(cropcap);
+	}
+
 	cropcap.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
 
 	if (0 == xioctl(fd, VIDIOC_CROPCAP, &cropcap)) {
@@ -297,7 +304,10 @@ static void init_device(int fd, uint32_t width, uint32_t height, uint32_t fps)
 		/* Errors ignored. */
 	}
 
-	CLEAR(fmt);
+	if (fmt) {
+		CLEAR(fmt);
+	}
+
 	fmt.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
 	fmt.fmt.pix.width       = width;
 	fmt.fmt.pix.height      = height;
@@ -307,7 +317,10 @@ static void init_device(int fd, uint32_t width, uint32_t height, uint32_t fps)
 	if (-1 == xioctl(fd, VIDIOC_S_FMT, &fmt))
 		errno_exit("VIDIOC_S_FMT");
 
-	CLEAR(setfps);
+	if (setfps) {
+		CLEAR(setfps);
+	}
+
 	setfps.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
 	setfps.parm.capture.timeperframe.numerator = 1;
 	setfps.parm.capture.timeperframe.denominator = fps;
@@ -369,7 +382,9 @@ static int read_frame(int fd, char *result_buf, size_t result_size)
 {
 	struct v4l2_buffer buf;
 
-	CLEAR(buf);
+	if (buf) {
+		CLEAR(buf);
+	}
 
 	buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
 	buf.memory = V4L2_MEMORY_MMAP;
@@ -409,7 +424,9 @@ static int read_frame(int fd, char *result_buf, size_t result_size)
 void control_set(int fd, uint32_t id, int32_t value)
 {
 	struct v4l2_control control;
-	CLEAR(control);
+	if (control) {
+		CLEAR(control);
+	}
 	control.id = id;
 	control.value = value;
 
@@ -440,7 +457,9 @@ int start_capturing(int fd)
 	for (i = 0; i < n_buffers; ++i) {
 		struct v4l2_buffer buf;
 
-		CLEAR(buf);
+		if (buf) {
+			CLEAR(buf);
+		}
 		buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
 		buf.memory = V4L2_MEMORY_MMAP;
 		buf.index = i;
