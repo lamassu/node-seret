@@ -1,5 +1,6 @@
 #include <node.h>
 #include <v8.h>
+#include <nan.h>
 #include <node_buffer.h>
 
 // C standard library

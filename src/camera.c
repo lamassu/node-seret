@@ -188,9 +188,7 @@ static void init_mmap(int fd)
 {
 	struct v4l2_requestbuffers req;
 
-	if (req) {
-		CLEAR(req);
-	}
+	CLEAR(req);
 
 	req.count = 4;
 	req.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
@@ -221,9 +219,7 @@ static void init_mmap(int fd)
 	for (n_buffers = 0; n_buffers < req.count; ++n_buffers) {
 		struct v4l2_buffer buf;
 
-		if (buf) {
-			CLEAR(buf);
-		}
+		CLEAR(buf);
 
 		buf.type        = V4L2_BUF_TYPE_VIDEO_CAPTURE;
 		buf.memory      = V4L2_MEMORY_MMAP;
@@ -280,9 +276,7 @@ static void init_device(int fd, uint32_t width, uint32_t height, uint32_t fps)
 		exit(EXIT_FAILURE);
 	}
 
-	if (cropcap) {
-		CLEAR(cropcap);
-	}
+	CLEAR(cropcap);
 
 	cropcap.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
 
@@ -304,9 +298,7 @@ static void init_device(int fd, uint32_t width, uint32_t height, uint32_t fps)
 		/* Errors ignored. */
 	}
 
-	if (fmt) {
-		CLEAR(fmt);
-	}
+	CLEAR(fmt);
 
 	fmt.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
 	fmt.fmt.pix.width       = width;
@@ -317,9 +309,7 @@ static void init_device(int fd, uint32_t width, uint32_t height, uint32_t fps)
 	if (-1 == xioctl(fd, VIDIOC_S_FMT, &fmt))
 		errno_exit("VIDIOC_S_FMT");
 
-	if (setfps) {
-		CLEAR(setfps);
-	}
+	CLEAR(setfps);
 
 	setfps.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
 	setfps.parm.capture.timeperframe.numerator = 1;
@@ -382,9 +372,7 @@ static int read_frame(int fd, char *result_buf, size_t result_size)
 {
 	struct v4l2_buffer buf;
 
-	if (buf) {
-		CLEAR(buf);
-	}
+	CLEAR(buf);
 
 	buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
 	buf.memory = V4L2_MEMORY_MMAP;
@@ -424,9 +412,9 @@ static int read_frame(int fd, char *result_buf, size_t result_size)
 void control_set(int fd, uint32_t id, int32_t value)
 {
 	struct v4l2_control control;
-	if (control) {
-		CLEAR(control);
-	}
+	
+	CLEAR(control);
+
 	control.id = id;
 	control.value = value;
 
@@ -457,9 +445,8 @@ int start_capturing(int fd)
 	for (i = 0; i < n_buffers; ++i) {
 		struct v4l2_buffer buf;
 
-		if (buf) {
-			CLEAR(buf);
-		}
+		CLEAR(buf);
+		
 		buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
 		buf.memory = V4L2_MEMORY_MMAP;
 		buf.index = i;
