@@ -1,5 +1,5 @@
-#include <node.h>
 #include <v8.h>
+#include <node.h>
 #include <nan.h>
 #include <node_buffer.h>
 
@@ -11,6 +11,7 @@
 #include "camera.h"
 
 using namespace v8;
+using namespace v8::internal;
 using namespace node;
 
 Handle<Value> CameraOn(const Arguments& args) {
