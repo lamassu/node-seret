@@ -11,15 +11,16 @@
 #include "camera.h"
 
 using namespace v8;
-using namespace v8::internal;
-using namespace node;
 
-Handle<Value> CameraOn(const Arguments& args) {
-  HandleScope scope;
+Handle<Value> CameraOn(const FunctionCallbackInfo<v8::Value>& args) {
+  Isolate *isolate = args.GetIsolate();
+  HandleScope scope(isolate);
 
   if (args.Length() != 4) {
     return ThrowException(
-      Exception::TypeError(String::New("cameraOn requires 4 arguments"))
+			  Exception::TypeError(String::NewFromUtf8(isolate,
+								   "cameraOn requires 4 arguments",
+								   NewStringType::kNormal))
     );
   }
 
@@ -33,8 +34,9 @@ Handle<Value> CameraOn(const Arguments& args) {
   return scope.Close(Integer::New(fd));
 }
 
-Handle<Value> CameraOff(const Arguments& args) {
-  HandleScope scope;
+Handle<Value> CameraOff(const FunctionCallbackInfo<v8::Value>& args) {
+  Isolate *isolate = args.GetIsolate();
+  HandleScope scope(isolate);
 
   if (args.Length() != 1) {
     return ThrowException(
@@ -49,8 +51,9 @@ Handle<Value> CameraOff(const Arguments& args) {
   return scope.Close(Null());
 }
 
-Handle<Value> StartCapture(const Arguments& args) {
-  HandleScope scope;
+Handle<Value> StartCapture(const FunctionCallbackInfo<v8::Value>& args) {
+  Isolate *isolate = args.GetIsolate();
+  HandleScope scope(isolate);
 
   if (args.Length() != 1) {
     return ThrowException(
@@ -69,8 +72,9 @@ Handle<Value> StartCapture(const Arguments& args) {
   return scope.Close(Null());
 }
 
-Handle<Value> StopCapture(const Arguments& args) {
-  HandleScope scope;
+Handle<Value> StopCapture(const FunctionCallbackInfo<v8::Value>& args) {
+  Isolate *isolate = args.GetIsolate();
+  HandleScope scope(isolate);
 
   if (args.Length() != 1) {
     return ThrowException(
@@ -85,8 +89,9 @@ Handle<Value> StopCapture(const Arguments& args) {
   return scope.Close(Null());
 }
 
-Handle<Value> CaptureFrame(const Arguments& args) {
-  HandleScope scope;
+Handle<Value> CaptureFrame(const FunctionCallbackInfo<v8::Value>& args) {
+  Isolate *isolate = args.GetIsolate();
+  HandleScope scope(isolate);
 
   if (args.Length() != 2) {
     return ThrowException(
@@ -104,8 +109,9 @@ Handle<Value> CaptureFrame(const Arguments& args) {
   return scope.Close(Integer::New(result));
 }
 
-Handle<Value> ControlSet(const Arguments& args) {
-  HandleScope scope;
+Handle<Value> ControlSet(const FunctionCallbackInfo<v8::Value>& args) {
+  Isolate *isolate = args.GetIsolate();
+  HandleScope scope(isolate);
 
   if (args.Length() != 3) {
     return ThrowException(
