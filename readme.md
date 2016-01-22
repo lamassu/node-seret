@@ -2,6 +2,24 @@
 
 Capturing images from USB(UVC) webcam on linux machines.
 
+Notes by Angel Leon (January 2016):
+
+I've made the module compatible with V8 4.x's new API on Jan 21st 2016.
+
+I added `configure.sh` scripts for Ubuntu, both for 32 and 64 bits architectures.
+
+If you want to build for 32bits, just point the symlinks of `binding.gyp` and `configure.sh` to their 32bit versions.
+
+Then just do the following.
+
+# do this once only to install dependencies
+$ ./configure.sh
+
+# and then this to build
+$ npm install
+
+If you want to build from a clean slate, just remove the generated build folder and invoke `npm install` again.
+
 ## Requirements
 
 - node == 0.10.33
