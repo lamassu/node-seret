@@ -1,1 +1,1 @@
-binding_64.gyp
+binding_32.gyp
