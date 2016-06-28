@@ -241,7 +241,7 @@ static void init_mmap(int fd)
 	}
 }
 
-static void init_device(int fd, uint32_t width, uint32_t height, uint32_t fps)
+static int init_device(int fd, uint32_t width, uint32_t height, uint32_t fps)
 {
 	struct v4l2_capability cap;
 	struct v4l2_cropcap cropcap;
@@ -254,15 +254,15 @@ static void init_device(int fd, uint32_t width, uint32_t height, uint32_t fps)
 	if (-1 == xioctl(fd, VIDIOC_QUERYCAP, &cap)) {
 		if (EINVAL == errno) {
 			fprintf(stderr, "Camera is not a V4L2 device\n");
-			exit(EXIT_FAILURE);
+			return errno;
 		} else {
-			errno_exit("VIDIOC_QUERYCAP");
+			return errno;
 		}
 	}
 
 	if (!(cap.capabilities & V4L2_CAP_VIDEO_CAPTURE)) {
-		fprintf(stderr, "Camera is no video capture device\n");
-		exit(EXIT_FAILURE);
+		fprintf(stderr, "Camera is not video capture device\n");
+		return -1;
 	}
 
 	if (!(cap.capabilities & V4L2_CAP_STREAMING)) {
