@@ -267,13 +267,13 @@ static int init_device(int fd, uint32_t width, uint32_t height, uint32_t fps)
 
 	if (!(cap.capabilities & V4L2_CAP_STREAMING)) {
 		fprintf(stderr, "Camera does not support streaming i/o\n");
-		exit(EXIT_FAILURE);
+		return -2;
 	}
 
 	int input = 0;
 	if(-1 == xioctl(fd, VIDIOC_S_INPUT, &input)) {
 		fprintf(stderr, "Can't set input\n");
-		exit(EXIT_FAILURE);
+		return -3;
 	}
 
 	CLEAR(cropcap);
