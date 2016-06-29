@@ -35,6 +35,7 @@
     "linux"
   ],
   "dependencies": {
-    "async": "~0.9.0"
+    "async": "~0.9.0",
+    "nan": "^2.1.0"
   }
 }
