@@ -1,6 +1,4 @@
-#include <node.h>
-#include <v8.h>
-#include <node_buffer.h>
+#include <nan.h>
 
 // C standard library
 #include <cstdlib>
@@ -9,51 +7,36 @@
 
 #include "camera.h"
 
-using namespace v8;
-using namespace node;
-
-Handle<Value> CameraOn(const Arguments& args) {
-  HandleScope scope;
-
-  if (args.Length() != 4) {
-    return ThrowException(
-      Exception::TypeError(String::New("cameraOn requires 4 arguments"))
-    );
+NAN_METHOD(CameraOn) {
+  if (info.Length() != 4) {
+    return Nan::ThrowTypeError("cameraOn requires 4 arguments");
   }
 
-  String::AsciiValue deviceString(args[0]->ToString());
-  uint32_t width = args[1]->IntegerValue();
-  uint32_t height = args[2]->IntegerValue();
-  uint32_t fps = args[3]->IntegerValue();
+  String::AsciiValue deviceString(info[0].As<v8::Object>());
+  uint32_t width = Nan::To<uint32_t>(info[1]);
+  uint32_t height = Nan::To<uint32_t>(info[2]);
+  uint32_t fps = Nan::To<uint32_t>(info[3]);
 
   int fd = camera_on(*deviceString, width, height, fps);
 
   return scope.Close(Integer::New(fd));
 }
 
-Handle<Value> CameraOff(const Arguments& args) {
-  HandleScope scope;
-
-  if (args.Length() != 1) {
-    return ThrowException(
-      Exception::TypeError(String::New("cameraOff requires 1 argument"))
-    );
+NAN_METHOD(CameraOff) {
+  if (info.Length() != 1) {
+    return Nan::ThrowTypeError("cameraOff requires 1 argument");
   }
 
-  int fd = args[0]->IntegerValue();
+  int fd = Nan::To<int>(info[0]);
 
   camera_off(fd);
 
-  return scope.Close(Null());
+  info.GetReturnValue().Set(Nan::Null());
 }
 
-Handle<Value> StartCapture(const Arguments& args) {
-  HandleScope scope;
-
-  if (args.Length() != 1) {
-    return ThrowException(
-      Exception::TypeError(String::New("startCapture requires 1 argument"))
-    );
+NAN_METHOD(StartCapture) {
+  if (info.Length() != 1) {
+    return Nan::ThrowTypeError("startCapture requires 1 argument");
   }
 
   int fd = args[0]->IntegerValue();
@@ -120,21 +103,19 @@ Handle<Value> ControlSet(const Arguments& args) {
   return scope.Close(Null());
 }
 
-void RegisterModule(Handle<Object> target) {
-
-  // target is the module object you see when require()ing the .node file.
-  target->Set(String::NewSymbol("cameraOn"),
-    FunctionTemplate::New(CameraOn)->GetFunction());
-  target->Set(String::NewSymbol("cameraOff"),
-    FunctionTemplate::New(CameraOff)->GetFunction());
-  target->Set(String::NewSymbol("startCapture"),
-    FunctionTemplate::New(StartCapture)->GetFunction());
-  target->Set(String::NewSymbol("stopCapture"),
-    FunctionTemplate::New(StopCapture)->GetFunction());
-  target->Set(String::NewSymbol("captureFrame"),
-    FunctionTemplate::New(CaptureFrame)->GetFunction());
-  target->Set(String::NewSymbol("controlSet"),
-    FunctionTemplate::New(ControlSet)->GetFunction());
+NAN_MODULE_INIT(InitAll) {
+  Nan::Set(target, Nan::New("cameraOn").ToLocalChecked(),
+    Nan::GetFunction(Nan::New<FunctionTemplate>(CameraOn)).ToLocalChecked());
+  Nan::Set(target, Nan::New("cameraOff").ToLocalChecked(),
+    Nan::GetFunction(Nan::New<FunctionTemplate>(CameraOff)).ToLocalChecked());
+  Nan::Set(target, Nan::New("startCapture").ToLocalChecked(),
+    Nan::GetFunction(Nan::New<FunctionTemplate>(StartCapture)).ToLocalChecked());
+  Nan::Set(target, Nan::New("stopCapture").ToLocalChecked(),
+    Nan::GetFunction(Nan::New<FunctionTemplate>(StopCapture)).ToLocalChecked());
+  Nan::Set(target, Nan::New("captureFrame").ToLocalChecked(),
+    Nan::GetFunction(Nan::New<FunctionTemplate>(CaptureFrame)).ToLocalChecked());
+  Nan::Set(target, Nan::New("controlSet").ToLocalChecked(),
+    Nan::GetFunction(Nan::New<FunctionTemplate>(ControlSet)).ToLocalChecked());
 }
 
-NODE_MODULE(seret, RegisterModule)
+NODE_MODULE(seret, InitAll);
